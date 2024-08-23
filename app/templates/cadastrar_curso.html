@@ -1,23 +1,24 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastrar Curso</title>
 </head>
 <body>
-    <h1>Cadastrar Curso</h1>
-    <form action="{{ url_for('cadastrar_curso') }}" method="post">
-        <label for="nome">Nome:</label><br>
-        <input type="text" id="nome" name="nome" required><br><br>
+    <h1>{{ 'Editar' if curso else 'Cadastrar' }} Curso</h1>
+    <form action="{{ url_for('manage_curso', id=curso.id) if curso else url_for('manage_curso') }}" method="POST">
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" value="{{ curso.nome if curso else '' }}" required><br>
         
-        <label for="duracao">Duração:</label><br>
-        <input type="number" id="duracao" name="duracao" required><br><br>
+        <label for="duracao">Duração (em horas):</label>
+        <input type="number" id="duracao" name="duracao" value="{{ curso.duracao if curso else '' }}" required><br>
         
-        <label for="preco">Preço:</label><br>
-        <input type="text" id="preco" name="preco" required><br><br>
-        
-        <input type="submit" value="Cadastrar">
+        <label for="preco">Preço:</label>
+        <input type="number" id="preco" name="preco" step="0.01" value="{{ curso.preco if curso else '' }}"><br>
+
+        <button type="submit">Salvar</button>
     </form>
+    <a href="{{ url_for('index') }}">Voltar</a>
 </body>
 </html>

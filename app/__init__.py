@@ -1,8 +1,7 @@
 from flask import Flask, request, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-import os
-import json
+from datetime import datetime
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -17,30 +16,74 @@ def create_app():
 
     @app.route('/')
     def index():
-        return render_template('index.html')
+        estudantes = Estudantes.query.all()
+        cursos = Cursos.query.all()
+        return render_template('index.html', estudantes=estudantes, cursos=cursos)
 
     @app.route('/cadastrar_estudante', methods=['GET', 'POST'])
-    def cadastrar_estudante():
+    @app.route('/editar_estudante/<int:id>', methods=['GET', 'POST'])
+    def manage_estudante(id=None):
+        if id:
+            estudante = Estudantes.query.get_or_404(id)
+        else:
+            estudante = None
+
         if request.method == 'POST':
             nome = request.form['nome']
             cpf = request.form['cpf']
-            estudante = Estudantes(nome=nome, cpf=cpf)
-            db.session.add(estudante)
+            email = request.form['email']
+            data_nascimento = datetime.strptime(request.form['data_nascimento'], '%Y-%m-%d').date()
+            
+            if estudante:
+                estudante.nome = nome
+                estudante.cpf = cpf
+                estudante.email = email
+                estudante.data_nascimento = data_nascimento
+            else:
+                estudante = Estudantes(nome=nome, cpf=cpf, email=email, data_nascimento=data_nascimento)
+                db.session.add(estudante)
             db.session.commit()
             return redirect(url_for('index'))
-        return render_template('cadastrar_estudante.html')
+
+        return render_template('cadastrar_estudante.html', estudante=estudante)
+
+    @app.route('/remover_estudante/<int:id>', methods=['POST'])
+    def remover_estudante(id):
+        estudante = Estudantes.query.get_or_404(id)
+        db.session.delete(estudante)
+        db.session.commit()
+        return redirect(url_for('index'))
 
     @app.route('/cadastrar_curso', methods=['GET', 'POST'])
-    def cadastrar_curso():
+    @app.route('/editar_curso/<int:id>', methods=['GET', 'POST'])
+    def manage_curso(id=None):
+        if id:
+            curso = Cursos.query.get_or_404(id)
+        else:
+            curso = None
+
         if request.method == 'POST':
             nome = request.form['nome']
             duracao = request.form['duracao']
             preco = request.form['preco']
-            curso = Cursos(nome=nome, duracao=duracao, preco=preco)
-            db.session.add(curso)
+            if curso:
+                curso.nome = nome
+                curso.duracao = duracao
+                curso.preco = preco
+            else:
+                curso = Cursos(nome=nome, duracao=duracao, preco=preco)
+                db.session.add(curso)
             db.session.commit()
             return redirect(url_for('index'))
-        return render_template('cadastrar_curso.html')
+
+        return render_template('cadastrar_curso.html', curso=curso)
+
+    @app.route('/remover_curso/<int:id>', methods=['POST'])
+    def remover_curso(id):
+        curso = Cursos.query.get_or_404(id)
+        db.session.delete(curso)
+        db.session.commit()
+        return redirect(url_for('index'))
 
     @app.route('/cadastrar_inscricao', methods=['GET', 'POST'])
     def cadastrar_inscricao():
@@ -56,75 +99,11 @@ def create_app():
         cursos = Cursos.query.all()
         return render_template('cadastrar_inscricao.html', estudantes=estudantes, cursos=cursos)
 
-    @app.route('/usuarios')
-    def usuarios():
-        usuarios = Estudantes.query.all()
-        html = '''
-            <!DOCTYPE html>
-            <html lang="pt-BR">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Lista de Estudantes</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        margin: 20px;
-                        padding: 0;
-                        background-color: #f4f4f4;
-                    }
-                    .container {
-                        max-width: 800px;
-                        margin: auto;
-                        background: #fff;
-                        padding: 20px;
-                        border-radius: 8px;
-                        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                    }
-                    h1 {
-                        text-align: center;
-                        color: #333;
-                    }
-                    ul {
-                        list-style-type: none;
-                        padding: 0;
-                    }
-                    li {
-                        margin-bottom: 10px;
-                        padding: 15px;
-                        background: #f9f9f9;
-                        border-radius: 4px;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    }
-                    li:hover {
-                        background: #e9e9e9;
-                    }
-                    .cpf {
-                        font-size: 0.8em;
-                        color: #666;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <h1>Lista de Estudantes</h1>
-                    <ul>
-        '''
-        for usuario in usuarios:
-            html += f'''
-                        <li>
-                            <strong>{usuario.nome}</strong>
-                            <span class="cpf">CPF: {usuario.cpf}</span>
-                        </li>
-            '''
-        html += '''
-                    </ul>
-                </div>
-            </body>
-            </html>
-        '''
-        return html
+    @app.route('/remover_inscricao/<int:id>', methods=['POST'])
+    def remover_inscricao(id):
+        inscricao = Inscricoes.query.get_or_404(id)
+        db.session.delete(inscricao)
+        db.session.commit()
+        return redirect(url_for('index'))
 
-    with app.app_context():
-        from . import models
     return app
